@@ -1,58 +1,72 @@
-<!DOCTYPE html>
-<html lang="uz">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shashka Arena</title>
-    <style>
-        body { background: #0f172a; color: #f8fafc; font-family: sans-serif; margin: 0; padding: 10px; }
-        .container { max-width: 400px; margin: auto; }
-        .user-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #1e293b; margin-bottom: 8px; border-radius: 10px; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 40px; height: 40px; background: #6366f1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .lvl { font-size: 11px; color: #94a3b8; }
-        .btn-invite { background: #22c55e; border: none; padding: 6px 12px; color: white; border-radius: 6px; cursor: pointer; }
-        h2 { text-align: center; color: #a78bfa; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h2>Abdurahmon Tog'ajon</h2>
-    <div id="online-users"></div>
-</div>
+python3 << 'EOF'
+with open('/mnt/user-data/outputs/index.html', 'r') as f:
+    content = f.read()
 
-<script>
-    const players = [
-        "Jasurbek", "Dilshod", "Azamat", "Bekzod", "Umidjon", "Otabek", "Sardor", "Sherzod",
-        "Nuriddin", "Firdavs", "Muhammad", "Rustam", "Islom", "Bobur", "Kamron", "Shoxrux",
-        "Zafar", "Sanjar", "Akmal", "Qobiljon Yalpak"
-    ];
+old = '''// BOT — faqat "Bot bilan" rejimida ataylab yutqazadi
+function botMove(){
+  if(gameOver)return;
+  const allMoves=[];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c].piece===2)
+    getMoves(r,c).forEach(([nr,nc])=>allMoves.push({fr:r,fc:c,tr:nr,tc:nc}));
+  if(!allMoves.length){gameOver=true;onWin();return;}
 
-    function renderUsers() {
-        const list = document.getElementById('online-users');
-        players.forEach(name => {
-            const level = Math.floor(Math.random() * 20) + 1; // Tasodifiy daraja
-            list.innerHTML += `
-                <div class="user-item">
-                    <div class="user-info">
-                        <div class="avatar">${name[0]}</div>
-                        <div>
-                            <div>${name}</div>
-                            <div class="lvl">Daraja: ${level}</div>
-                        </div>
-                    </div>
-                    <button class="btn-invite" onclick="alert('${name} bilan o\'yin so\'rovi yuborildi!')">Taklif</button>
-                </div>`;
-        });
+  let best;
+  if(currentOpp==='bot'){
+    // Faqat bot rejimida: 85% ehtimol bilan yomon yurish
+    if(Math.random()<0.85){
+      const bad=allMoves.filter(m=>m.tr<=m.fr||m.tc===0||m.tc===7);
+      best=bad.length?bad[Math.floor(Math.random()*bad.length)]:allMoves[Math.floor(Math.random()*allMoves.length)];
+    } else {
+      best=allMoves[Math.floor(Math.random()*allMoves.length)];
     }
+  } else {
+    // Odamlar bilan: normal tasodifiy yurish
+    const caps=allMoves.filter(m=>{
+      const c=getCaptures(m.fr,m.fc,board);
+      return c.some(([lr,lc])=>lr===m.tr&&lc===m.tc);
+    });
+    best=caps.length?caps[0]:allMoves[Math.floor(Math.random()*allMoves.length)];
+  }
+  doMove(best.fr,best.fc,best.tr,best.tc,2);
+}'''
 
-    // Har 24 soatda xabar (Test uchun 1 daqiqa qilib qo'yildi)
-    setInterval(() => {
-        const randomPlayer = players[Math.floor(Math.random() * players.length)];
-        alert(randomPlayer + " sizga yozdi: 'Kel birga shashka o'ynab dam olamiz?'");
-    }, 60000); 
+new = '''// RAQIB/BOT — 90% yutqazadi (sezilmaydi)
+function botMove(){
+  if(gameOver)return;
+  const allMoves=[];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(board[r][c].piece===2)
+    getMoves(r,c).forEach(([nr,nc])=>allMoves.push({fr:r,fc:c,tr:nr,tc:nc}));
+  if(!allMoves.length){gameOver=true;onWin();return;}
 
-    renderUsers();
-</script>
-</body>
-</html>
+  let best;
+  // 90% ehtimol yomon yurish — lekin sezilmasin
+  if(Math.random()<0.90){
+    // Orqaga yoki chetga yurish
+    const bad=allMoves.filter(m=>m.tr>=m.fr); // orqaga yoki o'sha yerda
+    if(bad.length){
+      best=bad[Math.floor(Math.random()*bad.length)];
+    } else {
+      // Hech yomon yurish yo'q — eng kam foydalik yurish
+      best=allMoves[allMoves.length-1];
+    }
+  } else {
+    // 10% — normal yurish (ishonchli ko'rinish uchun)
+    best=allMoves[Math.floor(Math.random()*allMoves.length)];
+  }
+  doMove(best.fr,best.fc,best.tr,best.tc,2);
+}'''
+
+content = content.replace(old, new)
+
+# Also fix timer to be faster
+content = content.replace("setTimeout(botMove,300+Math.random()*400)", "setTimeout(botMove,250+Math.random()*250)")
+
+with open('/mnt/user-data/outputs/index.html', 'w') as f:
+    f.write(content)
+print("Done")
+EOF
+Output
+
+Done
+
+Presented file
